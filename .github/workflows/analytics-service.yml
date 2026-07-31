@@ -106,15 +106,15 @@ jobs:
           cd ${{ env.SERVICE_NAME }}
 
           echo "##[section]Building the Docker Image..."
-          docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest .
+          docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:latest .
 
           echo "##[section]Pushing Image to ECR..."
-          docker push -a $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}
+          docker push -a $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}
 
       - name: Trivy - Container Scan
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: '${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}'
+          image-ref: '${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_NAME }}:${{ github.sha }}'
           format: 'table'
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
