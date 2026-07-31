@@ -48,7 +48,8 @@ jobs:
           projectBaseDir: ${{ env.SERVICE_NAME }}
           args: >
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
-            -Dsonar.projectKey=${{ vars.SONAR_ORGANIZATION }}_${{ env.SERVICE_NAME }}
+            -Dsonar.projectName=${{ github.event.repository.name }}
+            -Dsonar.projectKey=${{ vars.SONAR_ORGANIZATION }}_${{ github.event.repository.name }}
             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.spec.ts,**/*.test.ts,**/*.test.js,**/*.spec.js,**/*.d.ts,**/*.json,**/*.yml,**/*.yaml,**/*.md
 
   unit-tests:

@@ -56,7 +56,7 @@ def test_process_message_success(mock_sqs, mock_dynamo):
     
     # Inspeciona os argumentos que foram passados para o DynamoDB
     call_args = mock_dynamo.put_item.call_args[1]
-    assert call_args['TableName'] == 'tabela-teste'
+    assert call_args['TableName'] == 'ToggleMasterAnalytics'
     assert call_args['Item']['user_id']['S'] == 'usr-999'
     assert call_args['Item']['flag_name']['S'] == 'nova_home_page'
     assert call_args['Item']['result']['BOOL'] is True
