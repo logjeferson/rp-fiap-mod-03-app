@@ -1,0 +1,135 @@
+trigger:
+  branches:
+    include:
+        - main
+        - feature/*
+
+  paths:
+    include:
+        - targeting-service/*
+
+variables:
+  - name: agentPoolNonPrd
+    value: 'ubuntu-latest'
+
+  - name: serviceName
+    value: 'targeting-service'
+
+  - name: ecrRepository
+    value: 'ecr-targeting-service-01'
+
+  - name: variableGroupNonPrd
+    value: 'vg-fiap-mod-02'
+
+  - name: environmentNonPrd
+    value: 'en-fiap-mod-02'
+
+  - name: serviceConnectionNonPrd
+    value: 'sc-fiap-all-modules'
+
+stages:
+  - stage: 'build'
+    displayName: 'BUILD - FIAP - APP - TARGETING'
+    variables:
+      - group: '${{ variables.variableGroupNonPrd }}'
+    pool:
+      vmImage: '${{ variables.agentPoolNonPrd }}'
+    jobs:
+      - job: 'build'
+        displayName: 'BUILD - FIAP - APP - TARGETING'
+        steps:
+          - checkout: self
+          - task: Docker@2
+            displayName: 'Build - App - Targeting'
+            inputs:
+              command: 'build'
+              Dockerfile: '$(System.DefaultWorkingDirectory)/${{ variables.serviceName }}/Dockerfile'
+              repository: '${{ variables.serviceName }}'
+              tags: |
+                $(Build.BuildId)
+                latest
+
+          - task: ECRPushImage@1
+            displayName: 'ECR - Push Image - $(Build.BuildId)'
+            inputs:
+              awsCredentials: '${{ variables.serviceConnectionNonPrd }}'
+              regionName: '$(location)'
+              imageSource: 'imagename'
+              sourceImageName: '${{ variables.serviceName }}'
+              sourceImageTag: '$(Build.BuildId)'
+              pushTag: '$(Build.BuildId)'
+              repositoryName: '${{ variables.ecrRepository }}'
+              autoCreateRepository: true
+              forceDockerNamingConventions: true
+              removeDockerImage: false
+
+          - task: ECRPushImage@1
+            displayName: 'ECR - Push Image - Latest'
+            inputs:
+              awsCredentials: '${{ variables.serviceConnectionNonPrd }}'
+              regionName: '$(location)'
+              imageSource: 'imagename'
+              sourceImageName: '${{ variables.serviceName }}'
+              sourceImageTag: 'latest'
+              pushTag: 'latest'
+              repositoryName: '${{ variables.ecrRepository }}'
+              autoCreateRepository: true
+              forceDockerNamingConventions: true
+              removeDockerImage: true
+
+  - stage: 'deploy'
+    displayName: 'DEPLOY - FIAP - APP - TARGETING'
+    dependsOn: 'build'
+    variables:
+      - group: '${{ variables.variableGroupNonPrd }}'
+    pool:
+      vmImage: '${{ variables.agentPoolNonPrd }}'
+    jobs:
+      - deployment: 'deploy'
+        displayName: 'DEPLOY - FIAP - APP - TARGETING'
+        environment: '${{ variables.environmentNonPrd }}'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - task: replacetokens@7
+                  displayName: 'Replace Tokens - ConfigMap and Secret'
+                  inputs:
+                    root: '$(System.DefaultWorkingDirectory)/${{ variables.serviceName }}/devops'
+                    sources: '01-k8s/configmap-secret.yml'
+
+                - task: replacetokens@7
+                  displayName: 'Replace Tokens - Service and Deployment'
+                  inputs:
+                    root: '$(System.DefaultWorkingDirectory)/${{ variables.serviceName }}/devops'
+                    sources: '01-k8s/deployment-service.yml'
+
+                - task: AWSShellScript@1
+                  displayName: 'Deploy - App - Targeting'
+                  inputs:
+                    awsCredentials: '${{ variables.serviceConnectionNonPrd }}'
+                    regionName: '$(location)'
+                    scriptType: 'inline'
+                    inlineScript: |
+                      echo "================== EKS - Config =================="
+                      echo "##[section]Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+                      echo "--------------------------------------------------"
+
+                      echo "##[section]Conectando ao Cluster EKS..."
+                      aws eks update-kubeconfig --region $(location) --name microservices-cluster-01
+                      sleep 3
+
+                      echo "##[section]Aplicando ConfigMap e Secret..."
+                      kubectl apply -f $(System.DefaultWorkingDirectory)/${{ variables.serviceName }}/devops/01-k8s/configmap-secret.yml
+                      sleep 5
+
+                      echo "##[section]Aplicando Deployment e Service..."
+                      kubectl apply -f $(System.DefaultWorkingDirectory)/${{ variables.serviceName }}/devops/01-k8s/deployment-service.yml
+                      sleep 5
+
+                      echo "##[section]Verificando os ConfigMaps e Secrets..."
+                      kubectl get configmaps,secrets --namespace $(namespace)
+
+                      echo "##[section]Verificando os Pods e Services..."
+                      kubectl get pods,services --namespace $(namespace)

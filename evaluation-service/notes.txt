@@ -1,0 +1,13 @@
+Invoke-RestMethod -Uri "http://localhost:8004/health"
+
+Invoke-RestMethod -Uri "http://localhost:8001/admin/keys" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Headers @{ "Authorization" = "Bearer admin-secreto-123" } `
+    -Body '{"name": "evaluation-service-key"}'
+
+# Teste User 1
+Invoke-RestMethod -Uri "http://localhost:8004/evaluate?user_id=user-123&flag_name=enable-new-dashboard"
+
+# Teste User 2
+Invoke-RestMethod -Uri "http://localhost:8004/evaluate?user_id=user-abc&flag_name=enable-new-dashboard"

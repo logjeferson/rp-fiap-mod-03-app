@@ -1,0 +1,215 @@
+trigger:
+  branches:
+    include:
+        - main
+        - feature/*
+
+  paths:
+    include:
+        - analytics-service/*
+
+variables:
+  - name: agentPoolNonPrd
+    value: 'ubuntu-latest'
+
+  - name: serviceName
+    value: 'analytics-service'
+
+  - name: ecrRepository
+    value: 'ecr-analytics-service-01'
+
+  - name: variableGroupNonPrd
+    value: 'vg-fiap-mod-03'
+
+  - name: environmentNonPrd
+    value: 'en-fiap-mod-03'
+
+  - name: serviceConnectionSonarCloud
+    value: 'sc-fiap-all-modules-sonarqube'
+
+  - name: serviceConnectionNonPrd
+    value: 'sc-fiap-all-modules-aws'
+
+stages:
+  - stage: 'compliance'
+    displayName: 'COMPLIANCE - FIAP - APP - ANALYTICS'
+    variables:
+      - group: '${{ variables.variableGroupNonPrd }}'
+    pool:
+      vmImage: '${{ variables.agentPoolNonPrd }}'
+    jobs:
+      - job: 'sca'
+        displayName: 'SCA - Trivy File System Scan'
+        steps:
+          - checkout: self
+          - task: trivy@1
+            displayName: 'SCA - Trivy File System Scan'
+            inputs:
+              version: 'latest'
+              scanType: 'fs'
+              path: '$(System.DefaultWorkingDirectory)/${{ variables.serviceName }}'
+              format: 'junit'
+              output: 'trivy-results.xml'
+              exitCode: '0'
+              severities: 'HIGH,CRITICAL'
+              trivyArgs: '--scanners vuln'
+
+      - job: 'sast'
+        displayName: 'SAST - SonarCloud'
+        steps:
+          - checkout: self
+            fetchDepth: 0
+
+          - task: SonarCloudPrepare@4
+            displayName: 'SAST - Prepare SonarCloud'
+            inputs:
+              cliProjectName: '$(Build.Repository.Name)'
+              cliProjectKey: '$(organizationName)_$(Build.Repository.Name)'
+              cliProjectVersion: '1.0.0'
+              cliSources: '$(System.DefaultWorkingDirectory)/${{ variables.serviceName }}'
+              configMode: 'manual'
+              scannerMode: 'CLI'
+              organization: '$(organizationName)'
+              SonarCloud: '${{ variables.serviceConnectionSonarCloud }}'
+              extraProperties: |
+                sonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.spec.ts,**/*.test.ts,**/*.test.js,**/*.spec.js,**/*.d.ts,**/*.json,**/*.yml,**/*.yaml,**/*.md
+
+          - task: SonarCloudAnalyze@4
+            displayName: 'SAST - Run Analysis SonarCloud'
+
+          - task: SonarCloudPublish@4
+            displayName: 'SAST - Publish Results SonarCloud'
+
+  - stage: 'build'
+    displayName: 'BUILD - FIAP - APP - ANALYTICS'
+    dependsOn:
+      - 'compliance'
+    condition: succeeded()
+    variables:
+      - group: '${{ variables.variableGroupNonPrd }}'
+    pool:
+      vmImage: '${{ variables.agentPoolNonPrd }}'
+    jobs:
+      - job: 'build'
+        displayName: 'BUILD - FIAP - APP - ANALYTICS'
+        steps:
+          - checkout: self
+          - task: Docker@2
+            displayName: 'Build - App - Analytics'
+            inputs:
+              command: 'build'
+              Dockerfile: '$(System.DefaultWorkingDirectory)/${{ variables.serviceName }}/Dockerfile'
+              repository: '${{ variables.serviceName }}'
+              tags: |
+                $(Build.BuildId)
+                latest
+
+          - task: ECRPushImage@1
+            displayName: 'ECR - Push Image - $(Build.BuildId)'
+            inputs:
+              awsCredentials: '${{ variables.serviceConnectionNonPrd }}'
+              regionName: '$(location)'
+              imageSource: 'imagename'
+              sourceImageName: '${{ variables.serviceName }}'
+              sourceImageTag: '$(Build.BuildId)'
+              pushTag: '$(Build.BuildId)'
+              repositoryName: '${{ variables.ecrRepository }}'
+              autoCreateRepository: true
+              forceDockerNamingConventions: true
+              removeDockerImage: false
+
+          - task: ECRPushImage@1
+            displayName: 'ECR - Push Image - Latest'
+            inputs:
+              awsCredentials: '${{ variables.serviceConnectionNonPrd }}'
+              regionName: '$(location)'
+              imageSource: 'imagename'
+              sourceImageName: '${{ variables.serviceName }}'
+              sourceImageTag: 'latest'
+              pushTag: 'latest'
+              repositoryName: '${{ variables.ecrRepository }}'
+              autoCreateRepository: true
+              forceDockerNamingConventions: true
+              removeDockerImage: true
+
+          - task: trivy@1
+            displayName: 'Container Scan - Trivy Image Scan'
+            inputs:
+              version: 'latest'
+              scanType: 'image'
+              image: '$(ecr_analytics):$(Build.BuildId)' 
+              format: 'junit'
+              output: 'trivy-image-results.xml'
+              exitCode: '0'
+              severities: 'HIGH,CRITICAL'
+              trivyArgs: '--scanners vuln'
+
+  - stage: 'deploy'
+    displayName: 'DEPLOY - FIAP - APP - ANALYTICS'
+    dependsOn: 'build'
+    variables:
+      - group: '${{ variables.variableGroupNonPrd }}'
+    pool:
+      vmImage: '${{ variables.agentPoolNonPrd }}'
+    jobs:
+      - deployment: 'deploy'
+        displayName: 'DEPLOY - FIAP - APP - ANALYTICS'
+        environment: '${{ variables.environmentNonPrd }}'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - task: replacetokens@7
+                  displayName: 'Replace Tokens - ConfigMap and Secret'
+                  inputs:
+                    root: '$(System.DefaultWorkingDirectory)/${{ variables.serviceName }}/devops'
+                    sources: '01-k8s/configmap-secret.yml'
+
+                - task: replacetokens@7
+                  displayName: 'Replace Tokens - Service and Deployment'
+                  inputs:
+                    root: '$(System.DefaultWorkingDirectory)/${{ variables.serviceName }}/devops'
+                    sources: '01-k8s/deployment-service.yml'
+
+                - task: replacetokens@7
+                  displayName: 'Replace Tokens - ScaledObject'
+                  inputs:
+                    root: '$(System.DefaultWorkingDirectory)/${{ variables.serviceName }}/devops'
+                    sources: '01-k8s/scaled-object.yml'
+
+                - task: AWSShellScript@1
+                  displayName: 'Deploy - App - Analytics'
+                  inputs:
+                    awsCredentials: '${{ variables.serviceConnectionNonPrd }}'
+                    regionName: '$(location)'
+                    scriptType: 'inline'
+                    inlineScript: |
+                      echo "================== EKS - Config =================="
+                      echo "##[section]Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+                      echo "--------------------------------------------------"
+
+                      echo "##[section]Conectando ao Cluster EKS..."
+                      aws eks update-kubeconfig --region $(location) --name microservices-cluster-01
+                      sleep 3
+
+                      echo "##[section]Aplicando ConfigMap e Secret..."
+                      kubectl apply -f $(System.DefaultWorkingDirectory)/${{ variables.serviceName }}/devops/01-k8s/configmap-secret.yml
+                      sleep 5
+
+                      echo "##[section]Aplicando Deployment e Service..."
+                      kubectl apply -f $(System.DefaultWorkingDirectory)/${{ variables.serviceName }}/devops/01-k8s/deployment-service.yml
+                      sleep 5
+
+                      echo "##[section]Aplicando ScaledObject..."
+                      kubectl apply -f $(System.DefaultWorkingDirectory)/${{ variables.serviceName }}/devops/01-k8s/scaled-object.yml
+                      sleep 5
+
+                      echo "##[section]Verificando os ConfigMaps e Secrets..."
+                      kubectl get configmaps,secrets --namespace $(namespace)
+
+                      echo "##[section]Verificando os Pods e Services..."
+                      kubectl get pods,services --namespace $(namespace)
+
+                      echo "##[section]Verificando o HPA..."
+                      kubectl get hpa -n $(namespace)

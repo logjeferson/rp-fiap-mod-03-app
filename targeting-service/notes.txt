@@ -1,0 +1,28 @@
+Invoke-RestMethod -Uri "http://localhost:8003/health"
+
+Invoke-RestMethod -Uri "http://localhost:8003/rules" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Headers @{ "Authorization" = "Bearer tm_key_1899e759200e97710711c2eea9ed7b0e6c4e50531517b757438c8eecb1383cfc" } `
+    -Body '{
+        "flag_name": "enable-new-dashboard",
+        "is_enabled": true,
+        "rules": {
+            "type": "PERCENTAGE",
+            "value": 25
+        }
+    }'
+
+Invoke-RestMethod -Uri "http://localhost:8003/rules/enable-new-dashboard" `
+    -Headers @{ "Authorization" = "Bearer tm_key_1899e759200e97710711c2eea9ed7b0e6c4e50531517b757438c8eecb1383cfc" }
+
+Invoke-RestMethod -Uri "http://localhost:8003/rules/enable-new-dashboard" `
+    -Method Put `
+    -ContentType "application/json" `
+    -Headers @{ "Authorization" = "Bearer tm_key_1899e759200e97710711c2eea9ed7b0e6c4e50531517b757438c8eecb1383cfc" } `
+    -Body '{
+        "rules": {
+            "type": "PERCENTAGE",
+            "value": 50
+        }
+    }'

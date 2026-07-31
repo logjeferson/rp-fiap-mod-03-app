@@ -1,0 +1,133 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "#{namespace}#"
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: evaluation-sa
+  namespace: "#{namespace}#"
+  annotations:
+    eks.amazonaws.com/role-arn: "#{aws_evaluation_role_arn}#"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: evaluation-service
+  namespace: "#{namespace}#"
+spec:
+  type: ClusterIP
+  selector:
+    app: evaluation-service
+  ports:
+    - protocol: TCP
+      port: 8004
+      targetPort: 8004
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evaluation-deployment
+  namespace: "#{namespace}#"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evaluation-service
+  template:
+    metadata:
+      labels:
+        app: evaluation-service
+    spec:
+      serviceAccountName: evaluation-sa
+      initContainers:
+        - name: token-fetcher
+          image: curlimages/curl:latest
+          command: ['sh', '-c']
+          args:
+            - |
+              until curl -s -f http://auth-service.#{namespace}#.svc.cluster.local:8001/health; do echo "Aguardando auth-service..."; sleep 5; done;
+              TOKEN=$(curl -s -X POST http://auth-service.#{namespace}#.svc.cluster.local:8001/admin/keys -H 'Content-Type: application/json' -H "Authorization: Bearer admin-secreto-123" -d '{"name": "evaluation-auto-key"}' | grep -o '"key":"[^"]*' | cut -d'"' -f4)
+              echo $TOKEN > /shared-data/service-api-key.txt
+          env:
+            - name: SERVICE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: evaluation-secret
+                  key: SERVICE_API_KEY
+          volumeMounts:
+            - name: shared-data
+              mountPath: /shared-data
+      containers:
+        - name: evaluation-container
+          image: "#{ecr_evaluation}#:latest"
+          ports:
+            - containerPort: 8004
+          command: ['sh', '-c']
+          args:
+            - |
+              export SERVICE_API_KEY=$(cat /shared-data/service-api-key.txt) && /main
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8004
+            initialDelaySeconds: 15
+            periodSeconds: 60
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8004
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            successThreshold: 1
+            failureThreshold: 3
+          env:
+            - name: AWS_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: evaluation-config
+                  key: AWS_REGION
+            - name: AUTH_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: evaluation-config
+                  key: AUTH_SERVICE_URL
+            - name: FLAG_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: evaluation-config
+                  key: FLAG_SERVICE_URL
+            - name: TARGETING_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: evaluation-config
+                  key: TARGETING_SERVICE_URL
+            - name: AWS_SQS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: evaluation-secret
+                  key: AWS_SQS_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: evaluation-secret
+                  key: REDIS_URL
+          volumeMounts:
+            - name: shared-data
+              mountPath: /shared-data
+      volumes:
+        - name: shared-data
+          emptyDir: {}
