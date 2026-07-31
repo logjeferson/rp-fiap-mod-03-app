@@ -11,6 +11,7 @@ on:
 env:
   SERVICE_NAME: 'analytics-service'
   ECR_REPOSITORY_NAME: 'ecr-analytics-service-01'
+  PYTHON_VERSION: '3.11'
 
 jobs:
   sca:
@@ -26,7 +27,7 @@ jobs:
           scan-type: 'fs'
           scan-ref: '${{ github.workspace }}/${{ env.SERVICE_NAME }}'
           format: 'table'
-          exit-code: '0'
+          exit-code: '1'
           severity: 'HIGH,CRITICAL'
           scanners: 'vuln'
 
@@ -50,6 +51,7 @@ jobs:
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.projectName=${{ github.event.repository.name }}
             -Dsonar.projectKey=${{ github.event.repository.name }}
+            -Dsonar.python.version=${{ env.PYTHON_VERSION }}
             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.spec.ts,**/*.test.ts,**/*.test.js,**/*.spec.js,**/*.d.ts,**/*.json,**/*.yml,**/*.yaml,**/*.md
 
   unit-tests:
@@ -63,7 +65,7 @@ jobs:
       - name: Python - Setup
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
 
       - name: Python - Install Dependencies
