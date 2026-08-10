@@ -57,6 +57,7 @@ jobs:
 
   build-and-test:
     name: BUILD, LINT AND UNIT TESTS - SERVICE - AUTH
+    needs: [sca, sast]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -73,10 +74,10 @@ jobs:
         run: go mod download
 
       - name: Linter - golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          working-directory: ${{ env.SERVICE_NAME }}
+        working-directory: ${{ env.SERVICE_NAME }}
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          $(go env GOPATH)/bin/golangci-lint run
 
       - name: Go - Run - Unit Tests
         working-directory: ${{ env.SERVICE_NAME }}

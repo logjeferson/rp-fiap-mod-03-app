@@ -57,6 +57,7 @@ jobs:
 
   build-and-test:
     name: BUILD, LINT AND UNIT TESTS - SERVICE - ANALYTICS
+    needs: [sca, sast]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code

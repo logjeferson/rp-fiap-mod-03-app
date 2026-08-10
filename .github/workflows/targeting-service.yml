@@ -56,7 +56,8 @@ jobs:
             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.spec.ts,**/*.test.ts,**/*.test.js,**/*.spec.js,**/*.d.ts,**/*.json,**/*.yml,**/*.yaml,**/*.md
 
   build-and-test:
-    name: BUILD, LINT AND UNIT TESTS - SERVICE - ANALYTICS
+    name: BUILD, LINT AND UNIT TESTS - SERVICE - TARGETING
+    needs: [sca, sast]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
