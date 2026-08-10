@@ -1,11 +1,11 @@
 name: FIAP - MODULO 03 - APP - EVALUATION SERVICE
 
 on:
-  # push:
-  #   branches:
-  #     - main
-  #   paths:
-  #     - 'evaluation-service/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'evaluation-service/**'
   workflow_dispatch:
 
 env:

@@ -1,11 +1,11 @@
 name: FIAP - MODULO 03 - APP - ANALYTICS SERVICE
 
 on:
-  # push:
-  #   branches:
-  #     - main
-  #   paths:
-  #     - 'analytics-service/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'analytics-service/**'
   workflow_dispatch:
 
 env:

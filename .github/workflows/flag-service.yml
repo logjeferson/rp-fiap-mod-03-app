@@ -1,11 +1,11 @@
 name: FIAP - MODULO 03 - APP - FLAG SERVICE
 
 on:
-  # push:
-  #   branches:
-  #     - main
-  #   paths:
-  #     - 'flag-service/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'flag-service/**'
   workflow_dispatch:
 
 env:

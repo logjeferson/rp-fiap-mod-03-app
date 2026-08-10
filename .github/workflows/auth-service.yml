@@ -1,11 +1,11 @@
 name: FIAP - MODULO 03 - APP - AUTH SERVICE
 
 on:
-  # push:
-  #   branches:
-  #     - main
-  #   paths:
-  #     - 'auth-service/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'auth-service/**'
   workflow_dispatch:
 
 env:
