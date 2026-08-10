@@ -30,6 +30,7 @@ jobs:
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
           scanners: 'vuln'
+          trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'
 
   sast:
     name: SAST - SONARCLOUD - CODE ANALYSIS
@@ -116,3 +117,4 @@ jobs:
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
           scanners: 'vuln'
+          trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'
