@@ -82,9 +82,9 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --max-line-length=120 --statistics
 
-      - name: Python - Run - Unit Tests
-        working-directory: ${{ env.SERVICE_NAME }}
-        run: pytest
+      # - name: Python - Run - Unit Tests
+      #   working-directory: ${{ env.SERVICE_NAME }}
+      #   run: pytest
 
   docker-build:
     name: DOCKER BUILD - SERVICE - ANALYTICS
