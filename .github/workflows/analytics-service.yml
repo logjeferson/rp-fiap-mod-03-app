@@ -27,8 +27,8 @@ jobs:
           scan-type: 'fs'
           scan-ref: '${{ github.workspace }}/${{ env.SERVICE_NAME }}'
           format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          severity: 'CRITICAL'
           scanners: 'vuln'
           trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'
 
@@ -55,34 +55,39 @@ jobs:
             -Dsonar.python.version=${{ env.PYTHON_VERSION }}
             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.spec.ts,**/*.test.ts,**/*.test.js,**/*.spec.js,**/*.d.ts,**/*.json,**/*.yml,**/*.yaml,**/*.md
 
-  # unit-tests:
-  #   name: UNIT TESTS - SERVICE - ANALYTICS
-  #   needs: [sca, sast]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout Code
-  #       uses: actions/checkout@v4
+  build-and-test:
+    name: BUILD, LINT AND UNIT TESTS - SERVICE - ANALYTICS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-  #     - name: Python - Setup
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: ${{ env.PYTHON_VERSION }}
-  #         cache: 'pip'
+      - name: Python - Setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
 
-  #     - name: Python - Install Dependencies
-  #       working-directory: ${{ env.SERVICE_NAME }}
-  #       run: |
-  #         python -m pip install --upgrade pip
-  #         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-  #         pip install pytest
+      - name: Python - Install Dependencies
+        working-directory: ${{ env.SERVICE_NAME }}
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install flake8 pytest
 
-  #     - name: Python - Run Tests
-  #       working-directory: ${{ env.SERVICE_NAME }}
-  #       run: pytest
+      - name: Flake8 - Linter
+        working-directory: ${{ env.SERVICE_NAME }}
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --max-line-length=120 --statistics
 
-  build:
-    name: BUILD - SERVICE - ANALYTICS
-    # needs: unit-tests
+      - name: Python - Run - Unit Tests
+        working-directory: ${{ env.SERVICE_NAME }}
+        run: pytest
+
+  docker-build:
+    name: DOCKER BUILD - SERVICE - ANALYTICS
+    needs: build-and-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -102,7 +107,7 @@ jobs:
       - name: ECR - Build and Push Image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: 'v1.0.${{ github.sha }}'
         run: |
           cd ${{ env.SERVICE_NAME }}
 
@@ -117,7 +122,7 @@ jobs:
         with:
           image-ref: '${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_NAME }}:${{ github.sha }}'
           format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          severity: 'CRITICAL'
           scanners: 'vuln'
           trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'

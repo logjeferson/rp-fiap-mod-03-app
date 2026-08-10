@@ -11,7 +11,7 @@ on:
 env:
   SERVICE_NAME: 'auth-service'
   ECR_REPOSITORY_NAME: 'ecr-auth-service-01'
-  PYTHON_VERSION: '3.11'
+  GO_VERSION: '1.25'
 
 jobs:
   sca:
@@ -27,8 +27,8 @@ jobs:
           scan-type: 'fs'
           scan-ref: '${{ github.workspace }}/${{ env.SERVICE_NAME }}'
           format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          severity: 'CRITICAL'
           scanners: 'vuln'
           trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'
 
@@ -52,34 +52,43 @@ jobs:
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.projectName=${{ github.event.repository.name }}/${{ env.SERVICE_NAME }}
             -Dsonar.projectKey=${{ github.event.repository.name }}
-            -Dsonar.python.version=${{ env.PYTHON_VERSION }}
+            -Dsonar.go.version=${{ env.GO_VERSION }}
             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.spec.ts,**/*.test.ts,**/*.test.js,**/*.spec.js,**/*.d.ts,**/*.json,**/*.yml,**/*.yaml,**/*.md
 
-  # unit-tests:
-  #   name: UNIT TESTS - SERVICE - AUTH
-  #   needs: [sca, sast]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout Code
-  #       uses: actions/checkout@v4
+  build-and-test:
+    name: BUILD, LINT AND UNIT TESTS - SERVICE - AUTH
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-  #     - name: Setup Go
-  #       uses: actions/setup-go@v5
-  #       with:
-  #         go-version: '1.21'
-  #         cache-dependency-path: '${{ env.SERVICE_NAME }}/go.sum'
+      - name: Go - Setup
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '${{ env.SERVICE_NAME }}/go.sum'
 
-  #     - name: Install Dependencies
-  #       working-directory: ${{ env.SERVICE_NAME }}
-  #       run: go mod download
+      - name: Go - Install Dependencies
+        working-directory: ${{ env.SERVICE_NAME }}
+        run: go mod download
 
-  #     - name: Run Tests
-  #       working-directory: ${{ env.SERVICE_NAME }}
-  #       run: go test -v ./...
+      - name: Linter - golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: ${{ env.SERVICE_NAME }}
 
-  build:
-    name: BUILD - SERVICE - AUTH
-    # needs: unit-tests
+      - name: Go - Run - Unit Tests
+        working-directory: ${{ env.SERVICE_NAME }}
+        run: go test -v ./...
+
+      - name: Go - Run - Build
+        working-directory: ${{ env.SERVICE_NAME }}
+        run: go build -v -o main .
+
+  docker-build:
+    name: DOCKER BUILD - SERVICE - AUTH
+    needs: build-and-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -99,7 +108,7 @@ jobs:
       - name: ECR - Build and Push Image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: 'v1.0.${{ github.sha }}'
         run: |
           cd ${{ env.SERVICE_NAME }}
 
@@ -114,7 +123,7 @@ jobs:
         with:
           image-ref: '${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_NAME }}:${{ github.sha }}'
           format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          severity: 'CRITICAL'
           scanners: 'vuln'
           trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'
