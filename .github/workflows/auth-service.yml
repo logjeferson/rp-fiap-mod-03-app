@@ -1,16 +1,16 @@
-name: FIAP - MODULO 03 - APP - ANALYTICS SERVICE
+name: FIAP - MODULO 03 - APP - AUTH SERVICE
 
 on:
   # push:
   #   branches:
   #     - main
   #   paths:
-  #     - 'analytics-service/**'
+  #     - 'auth-service/**'
   workflow_dispatch:
 
 env:
-  SERVICE_NAME: 'analytics-service'
-  ECR_REPOSITORY_NAME: 'ecr-analytics-service-01'
+  SERVICE_NAME: 'auth-service'
+  ECR_REPOSITORY_NAME: 'ecr-auth-service-01'
   PYTHON_VERSION: '3.11'
 
 jobs:
@@ -55,7 +55,7 @@ jobs:
             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.spec.ts,**/*.test.ts,**/*.test.js,**/*.spec.js,**/*.d.ts,**/*.json,**/*.yml,**/*.yaml,**/*.md
 
   # unit-tests:
-  #   name: UNIT TESTS - SERVICE - ANALYTICS
+  #   name: UNIT TESTS - SERVICE - AUTH
   #   needs: [sca, sast]
   #   runs-on: ubuntu-latest
   #   steps:
@@ -80,7 +80,7 @@ jobs:
   #       run: pytest
 
   build:
-    name: BUILD - SERVICE - ANALYTICS
+    name: BUILD - SERVICE - AUTH
     # needs: unit-tests
     runs-on: ubuntu-latest
     steps:
