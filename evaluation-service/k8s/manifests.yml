@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: eks-namespace
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: evaluation-config
+  namespace: eks-namespace
+data:
+  AWS_REGION: "us-east-1"
+  AUTH_SERVICE_URL: "http://auth-service.eks-namespace.svc.cluster.local:8001"
+  FLAG_SERVICE_URL: "http://flag-service.eks-namespace.svc.cluster.local:8002"
+  TARGETING_SERVICE_URL: "http://targeting-service.eks-namespace.svc.cluster.local:8003"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: evaluation-secret
+  namespace: eks-namespace
+type: Opaque
+stringData:
+  AWS_SQS_URL: "#{aws_sqs_url}#"
+  AWS_REDIS_URL: "redis://#{aws_cache_endpoint}#"
+  SERVICE_API_KEY: "SUA_CHAVE_DE_SERVICO"
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: evaluation-sa
+  namespace: eks-namespace
+  annotations:
+    eks.amazonaws.com/role-arn: "#{aws_evaluation_role_arn}#"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: evaluation-service
+  namespace: eks-namespace
+spec:
+  type: ClusterIP
+  selector:
+    app: evaluation-service
+  ports:
+    - protocol: TCP
+      port: 8004
+      targetPort: 8004

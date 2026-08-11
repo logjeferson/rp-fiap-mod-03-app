@@ -1,38 +1,8 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: "#{namespace}#"
-
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: evaluation-sa
-  namespace: "#{namespace}#"
-  annotations:
-    eks.amazonaws.com/role-arn: "#{aws_evaluation_role_arn}#"
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: evaluation-service
-  namespace: "#{namespace}#"
-spec:
-  type: ClusterIP
-  selector:
-    app: evaluation-service
-  ports:
-    - protocol: TCP
-      port: 8004
-      targetPort: 8004
-
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: evaluation-deployment
-  namespace: "#{namespace}#"
+  namespace: eks-namespace
 spec:
   replicas: 1
   selector:
@@ -50,8 +20,8 @@ spec:
           command: ['sh', '-c']
           args:
             - |
-              until curl -s -f http://auth-service.#{namespace}#.svc.cluster.local:8001/health; do echo "Aguardando auth-service..."; sleep 5; done;
-              TOKEN=$(curl -s -X POST http://auth-service.#{namespace}#.svc.cluster.local:8001/admin/keys -H 'Content-Type: application/json' -H "Authorization: Bearer admin-secreto-123" -d '{"name": "evaluation-auto-key"}' | grep -o '"key":"[^"]*' | cut -d'"' -f4)
+              until curl -s -f http://auth-service.eks-namespace.svc.cluster.local:8001/health; do echo "Aguardando auth-service..."; sleep 5; done;
+              TOKEN=$(curl -s -X POST http://auth-service.eks-namespace.svc.cluster.local:8001/admin/keys -H 'Content-Type: application/json' -H "Authorization: Bearer admin-secreto-123" -d '{"name": "evaluation-auto-key"}' | grep -o '"key":"[^"]*' | cut -d'"' -f4)
               echo $TOKEN > /shared-data/service-api-key.txt
           env:
             - name: SERVICE_API_KEY
@@ -64,7 +34,7 @@ spec:
               mountPath: /shared-data
       containers:
         - name: evaluation-container
-          image: "#{ecr_evaluation}#:latest"
+          image: DOCKER_REGISTRY/ecr-evaluation-service-01:latest
           ports:
             - containerPort: 8004
           command: ['sh', '-c']
@@ -120,11 +90,11 @@ spec:
                 secretKeyRef:
                   name: evaluation-secret
                   key: AWS_SQS_URL
-            - name: REDIS_URL
+            - name: AWS_REDIS_URL
               valueFrom:
                 secretKeyRef:
                   name: evaluation-secret
-                  key: REDIS_URL
+                  key: AWS_REDIS_URL
           volumeMounts:
             - name: shared-data
               mountPath: /shared-data

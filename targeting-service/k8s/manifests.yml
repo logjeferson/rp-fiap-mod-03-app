@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: eks-namespace
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: targeting-config
+  namespace: eks-namespace
+data:
+  AUTH_SERVICE_URL: "http://auth-service.eks-namespace.svc.cluster.local:8001"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: targeting-secret
+  namespace: eks-namespace
+type: Opaque
+stringData:
+  DATABASE_URL: "postgres://#{db_user}#:#{db_pass}#@#{rds_endpoint}#/targeting_db"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: targeting-service
+  namespace: eks-namespace
+spec:
+  type: ClusterIP
+  selector:
+    app: targeting-service
+  ports:
+    - protocol: TCP
+      port: 8003
+      targetPort: 8003

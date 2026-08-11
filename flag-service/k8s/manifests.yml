@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: eks-namespace
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flag-config
+  namespace: eks-namespace
+data:
+  AUTH_SERVICE_URL: "http://auth-service.eks-namespace.svc.cluster.local:8001"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: flag-secret
+  namespace: eks-namespace
+type: Opaque
+stringData:
+  DATABASE_URL: "postgres://#{db_user}#:#{db_pass}#@#{rds_endpoint}#/flags_db"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flag-service
+  namespace: eks-namespace
+spec:
+  type: ClusterIP
+  selector:
+    app: flag-service
+  ports:
+    - protocol: TCP
+      port: 8002
+      targetPort: 8002

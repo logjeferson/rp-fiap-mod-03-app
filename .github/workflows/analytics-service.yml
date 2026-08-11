@@ -130,3 +130,94 @@ jobs:
           severity: 'CRITICAL'
           scanners: 'vuln'
           trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'
+
+  deploy:
+    name: DEPLOY - SERVICE - ANALYTICS
+    needs: docker-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      EKS_CLUSTER_NAME: 'eks-cluster-01'
+      EKS_NAMESPACE: 'eks-namespace'
+      AWS_SQS_NAME: 'EventQueue'
+      AWS_EVALUATION_ROLE_NAME: 'evaluation-service-role'
+      AWS_ANALYTICS_ROLE_NAME: 'analytics-service-role'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: AWS Credentials - Configure
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: EKS Cluster - Setup
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: EKS Cluster - Connect
+        run: |
+          echo "============= EKS Cluster - Connect =============="
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+
+          echo "##[section]Connecting to the EKS Cluster..."
+          aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+
+      - name: EKS Cluster - Create Dependencies
+        run: |
+          echo "======= EKS Cluster - Create Dependencies ========"
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+
+          echo "##[section]Getting SQS URL..."
+          SQS_URL=$(aws sqs get-queue-url \
+            --queue-name ${{ env.AWS_SQS_NAME }} \
+            --query "QueueUrl" \
+            --output text)
+          echo "##[section]SQS URL found: $SQS_URL"
+
+          echo "##[section]Getting IAM Role ARN..."
+          EVALUATION_ROLE_ARN=$(aws iam get-role \
+            --role-name ${{ env.AWS_EVALUATION_ROLE_NAME }} \
+            --query "Role.Arn" \
+            --output text)
+          echo "##[section]IAM Role ARN found: $EVALUATION_ROLE_ARN"
+
+          echo "##[section]Getting IAM Role ARN..."
+          ANALYTICS_ROLE_ARN=$(aws iam get-role \
+            --role-name ${{ env.AWS_ANALYTICS_ROLE_NAME }} \
+            --query "Role.Arn" \
+            --output text)
+          echo "##[section]IAM Role ARN found: $ANALYTICS_ROLE_ARN"
+
+          echo "##[section]Applying Manifests..."
+          cd ${{ env.SERVICE_NAME }}
+          sed -i "s|#{aws_sqs_url}#|$SQS_URL|g" k8s/manifests.yml
+          sed -i "s|#{aws_evaluation_role_arn}#|$EVALUATION_ROLE_ARN|g" k8s/manifests.yml
+          sed -i "s|#{aws_analytics_role_arn}#|$ANALYTICS_ROLE_ARN|g" k8s/manifests.yml
+          kubectl apply -f k8s/manifests.yml
+
+      - name: ECR - Connect
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: GitOps - Tag Update
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: 'v1.0.${{ github.sha }}'
+        run: |
+          cd ${{ env.SERVICE_NAME }}
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          sed -i "s|image: DOCKER_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:.*|image: $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG|g" k8s/deployment.yml
+          
+          git add k8s/deployment.yml
+          git commit -m "chore(gitops): atualiza imagem do ${{ env.SERVICE_NAME }} para a tag $IMAGE_TAG [skip ci]"
+          git push origin HEAD

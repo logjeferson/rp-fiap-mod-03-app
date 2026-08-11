@@ -43,7 +43,7 @@ Ele funciona da seguinte forma:
     PORT="8004"
     
     # URL do seu Redis local
-    REDIS_URL="redis://localhost:6379"
+    AWS_REDIS_URL="redis://localhost:6379"
     
     # URLs dos outros serviços
     FLAG_SERVICE_URL="http://localhost:8002"

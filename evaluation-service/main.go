@@ -36,9 +36,9 @@ func main() {
 		port = "8004"
 	}
 
-	redisURL := os.Getenv("REDIS_URL")
+	redisURL := os.Getenv("AWS_REDIS_URL")
 	if redisURL == "" {
-		log.Fatal("REDIS_URL deve ser definida (ex: redis://localhost:6379)")
+		log.Fatal("AWS_REDIS_URL deve ser definida (ex: redis://localhost:6379)")
 	}
 
 	flagSvcURL := os.Getenv("FLAG_SERVICE_URL")
@@ -62,7 +62,7 @@ func main() {
 	}
 
 	// --- Inicializa Clientes ---
-	
+
 	// Cliente Redis
 	opt, err := redis.ParseURL(redisURL)
 	if err != nil {

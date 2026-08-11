@@ -130,3 +130,79 @@ jobs:
           severity: 'CRITICAL'
           scanners: 'vuln'
           trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'
+
+  deploy:
+    name: DEPLOY - SERVICE - FLAG
+    needs: docker-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      EKS_CLUSTER_NAME: 'eks-cluster-01'
+      EKS_NAMESPACE: 'eks-namespace'
+      AWS_RDS_NAME: 'rds-flag-db-01'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: AWS Credentials - Configure
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: EKS Cluster - Setup
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: EKS Cluster - Connect
+        run: |
+          echo "============= EKS Cluster - Connect =============="
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+
+          echo "##[section]Connecting to the EKS Cluster..."
+          aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+
+      - name: EKS Cluster - Create Dependencies
+        env:
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+        run: |
+          echo "======= EKS Cluster - Create Dependencies ========"
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+
+          echo "##[section]Getting RDS Endpoint..."
+          RDS_ENDPOINT=$(aws rds describe-db-instances \
+            --db-instance-identifier ${{ env.AWS_RDS_NAME }} \
+            --query "DBInstances[0].Endpoint.Address" \
+            --output text)
+          echo "##[section]Endpoint found: $RDS_ENDPOINT"
+
+          echo "##[section]Applying Manifests..."
+          cd ${{ env.SERVICE_NAME }}
+          sed -i "s|postgres://#{db_user}#:#{db_pass}#@#{rds_endpoint}#/flags_db|postgres://$DB_USER:$DB_PASS@$RDS_ENDPOINT/flags_db|g" k8s/manifests.yml
+          kubectl apply -f k8s/manifests.yml
+
+      - name: ECR - Connect
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: GitOps - Tag Update
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: 'v1.0.${{ github.sha }}'
+        run: |
+          cd ${{ env.SERVICE_NAME }}
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          sed -i "s|image: DOCKER_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:.*|image: $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG|g" k8s/deployment.yml
+          
+          git add k8s/deployment.yml
+          git commit -m "chore(gitops): atualiza imagem do ${{ env.SERVICE_NAME }} para a tag $IMAGE_TAG [skip ci]"
+          git push origin HEAD
