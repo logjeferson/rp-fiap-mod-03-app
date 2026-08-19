@@ -181,6 +181,9 @@ jobs:
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
+          export DB_USER="${{ secrets.DB_USER }}"
+          export DB_PASS="${{ secrets.DB_PASS }}"
+
           echo "##[section]Getting RDS Endpoint..."
           RDS_ENDPOINT=$(aws rds describe-db-instances \
             --db-instance-identifier ${{ env.AWS_RDS_NAME }} \
