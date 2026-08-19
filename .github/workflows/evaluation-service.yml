@@ -208,9 +208,11 @@ jobs:
           sed -i "s|#{aws_sqs_url}#|$SQS_URL|g" k8s/manifests.yml
           sed -i "s|#{aws_cache_endpoint}#|$REDIS_ENDPOINT|g" k8s/manifests.yml
           sed -i "s|#{aws_evaluation_role_arn}#|$ROLE_ARN|g" k8s/manifests.yml
+          cat k8s/manifests.yml
           kubectl apply -f k8s/manifests.yml
 
           sed -i "s|image: DOCKER_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:.*|image: $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG|g" k8s/deployment.yml
+          cat k8s/deployment.yml
           kubectl apply -f k8s/deployment.yml
 
       # - name: GitOps - Tag Update

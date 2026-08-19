@@ -141,8 +141,6 @@ jobs:
       EKS_CLUSTER_NAME: 'eks-cluster-01'
       EKS_NAMESPACE: 'eks-namespace'
       AWS_RDS_NAME: 'rds-flag-db-01'
-      DB_USER: ${{ secrets.DB_USER }}
-      DB_PASS: ${{ secrets.DB_PASS }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -190,12 +188,10 @@ jobs:
 
           echo "##[section]Applying Manifests..."
           cd ${{ env.SERVICE_NAME }}
-          sed -i "s|postgres://#{db_user}#:#{db_pass}#@#{rds_endpoint}#|postgres://${{ env.DB_USER }}:${{ env.DB_PASS }}@$RDS_ENDPOINT|g" k8s/manifests.yml
-          cat k8s/manifests.yml
+          sed -i "s|postgres://#{db_user}#:#{db_pass}#@#{rds_endpoint}#|postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@$RDS_ENDPOINT|g" k8s/manifests.yml
           kubectl apply -f k8s/manifests.yml
 
           sed -i "s|image: DOCKER_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:.*|image: $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG|g" k8s/deployment.yml
-          cat k8s/deployment.yml
           kubectl apply -f k8s/deployment.yml
 
       # - name: GitOps - Tag Update
