@@ -167,10 +167,16 @@ jobs:
           echo "##[section]Connecting to the EKS Cluster..."
           aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
 
+      - name: ECR - Connect
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: EKS Cluster - Create Dependencies
         env:
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASS: ${{ secrets.DB_PASS }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: 'v1.0.${{ github.sha }}'
         run: |
           echo "======= EKS Cluster - Create Dependencies ========"
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
@@ -190,10 +196,6 @@ jobs:
 
           sed -i "s|image: DOCKER_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:.*|image: $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG|g" k8s/deployment.yml
           kubectl apply -f k8s/deployment.yml
-
-      - name: ECR - Connect
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
 
       # - name: GitOps - Tag Update
       #   env:
