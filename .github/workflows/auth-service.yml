@@ -191,9 +191,9 @@ jobs:
 
           echo "##[section]Applying Manifests..."
           cd ${{ env.SERVICE_NAME }}
-          sed -i "s|__DB_USER__|${{ secrets.DB_USER }}|g" k8s/manifests.yml
-          sed -i "s|__DB_PASS__|${{ secrets.DB_PASS }}|g" k8s/manifests.yml
-          sed -i "s|__RDS_ENDPOINT__|$RDS_ENDPOINT|g" k8s/manifests.yml
+          sed -i "s|DB_USER|${{ env.DB_USER }}|g" k8s/manifests.yml
+          sed -i "s|DB_PASS|${{ env.DB_PASS }}|g" k8s/manifests.yml
+          sed -i "s|RDS_ENDPOINT|$RDS_ENDPOINT|g" k8s/manifests.yml
           cat k8s/manifests.yml
           kubectl apply -f k8s/manifests.yml
 
