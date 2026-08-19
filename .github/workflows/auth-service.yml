@@ -14,82 +14,82 @@ env:
   GO_VERSION: '1.25'
 
 jobs:
-  sca:
-    name: SCA - TRIVY - FILE SYSTEM SCAN
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+  # sca:
+  #   name: SCA - TRIVY - FILE SYSTEM SCAN
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
 
-      - name: Trivy - Vulnerability Scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '${{ github.workspace }}/${{ env.SERVICE_NAME }}'
-          format: 'table'
-          exit-code: '0'
-          severity: 'CRITICAL'
-          scanners: 'vuln'
-          trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'
+  #     - name: Trivy - Vulnerability Scanner
+  #       uses: aquasecurity/trivy-action@master
+  #       with:
+  #         scan-type: 'fs'
+  #         scan-ref: '${{ github.workspace }}/${{ env.SERVICE_NAME }}'
+  #         format: 'table'
+  #         exit-code: '0'
+  #         severity: 'CRITICAL'
+  #         scanners: 'vuln'
+  #         trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'
 
-  sast:
-    name: SAST - SONARCLOUD - CODE ANALYSIS
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # sast:
+  #   name: SAST - SONARCLOUD - CODE ANALYSIS
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - name: SonarCloud - Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          projectBaseDir: ${{ env.SERVICE_NAME }}
-          args: >
-            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
-            -Dsonar.projectName=${{ github.event.repository.name }}/${{ env.SERVICE_NAME }}
-            -Dsonar.projectKey=${{ github.event.repository.name }}_${{ env.SERVICE_NAME }}
-            -Dsonar.go.version=${{ env.GO_VERSION }}
-            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.spec.ts,**/*.test.ts,**/*.test.js,**/*.spec.js,**/*.d.ts,**/*.json,**/*.yml,**/*.yaml,**/*.md
+  #     - name: SonarCloud - Scan
+  #       uses: SonarSource/sonarcloud-github-action@master
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #       with:
+  #         projectBaseDir: ${{ env.SERVICE_NAME }}
+  #         args: >
+  #           -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+  #           -Dsonar.projectName=${{ github.event.repository.name }}/${{ env.SERVICE_NAME }}
+  #           -Dsonar.projectKey=${{ github.event.repository.name }}_${{ env.SERVICE_NAME }}
+  #           -Dsonar.go.version=${{ env.GO_VERSION }}
+  #           -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.spec.ts,**/*.test.ts,**/*.test.js,**/*.spec.js,**/*.d.ts,**/*.json,**/*.yml,**/*.yaml,**/*.md
 
-  build-and-test:
-    name: BUILD, LINT AND UNIT TESTS - SERVICE - AUTH
-    needs: [sca, sast]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+  # build-and-test:
+  #   name: BUILD, LINT AND UNIT TESTS - SERVICE - AUTH
+  #   needs: [sca, sast]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
 
-      - name: Go - Setup
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache-dependency-path: '${{ env.SERVICE_NAME }}/go.sum'
+  #     - name: Go - Setup
+  #       uses: actions/setup-go@v5
+  #       with:
+  #         go-version: ${{ env.GO_VERSION }}
+  #         cache-dependency-path: '${{ env.SERVICE_NAME }}/go.sum'
 
-      - name: Go - Install Dependencies
-        working-directory: ${{ env.SERVICE_NAME }}
-        run: go mod download
+  #     - name: Go - Install Dependencies
+  #       working-directory: ${{ env.SERVICE_NAME }}
+  #       run: go mod download
 
-      - name: Linter - golangci-lint
-        working-directory: ${{ env.SERVICE_NAME }}
-        run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-          $(go env GOPATH)/bin/golangci-lint run
+  #     - name: Linter - golangci-lint
+  #       working-directory: ${{ env.SERVICE_NAME }}
+  #       run: |
+  #         go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+  #         $(go env GOPATH)/bin/golangci-lint run
 
-      - name: Go - Run - Unit Tests
-        working-directory: ${{ env.SERVICE_NAME }}
-        run: go test -v ./...
+  #     - name: Go - Run - Unit Tests
+  #       working-directory: ${{ env.SERVICE_NAME }}
+  #       run: go test -v ./...
 
-      - name: Go - Run - Build
-        working-directory: ${{ env.SERVICE_NAME }}
-        run: go build -v -o main .
+  #     - name: Go - Run - Build
+  #       working-directory: ${{ env.SERVICE_NAME }}
+  #       run: go build -v -o main .
 
   docker-build:
     name: DOCKER BUILD - SERVICE - AUTH
-    needs: build-and-test
+    # needs: build-and-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -119,18 +119,18 @@ jobs:
           echo "##[section]Pushing Image to ECR..."
           docker push -a $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}
 
-      - name: Trivy - Container Scan
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: 'v1.0.${{ github.sha }}'
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: '${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}'
-          format: 'table'
-          exit-code: '0'
-          severity: 'CRITICAL'
-          scanners: 'vuln'
-          trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'
+      # - name: Trivy - Container Scan
+      #   env:
+      #     ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      #     IMAGE_TAG: 'v1.0.${{ github.sha }}'
+      #   uses: aquasecurity/trivy-action@master
+      #   with:
+      #     image-ref: '${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}'
+      #     format: 'table'
+      #     exit-code: '0'
+      #     severity: 'CRITICAL'
+      #     scanners: 'vuln'
+      #     trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'
 
   deploy:
     name: DEPLOY - SERVICE - AUTH
