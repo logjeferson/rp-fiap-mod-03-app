@@ -141,6 +141,8 @@ jobs:
       EKS_CLUSTER_NAME: 'eks-cluster-01'
       EKS_NAMESPACE: 'eks-namespace'
       AWS_RDS_NAME: 'rds-flag-db-01'
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASS: ${{ secrets.DB_PASS }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -172,17 +174,12 @@ jobs:
 
       - name: EKS Cluster - Create Dependencies
         env:
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASS: ${{ secrets.DB_PASS }}
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: 'v1.0.${{ github.sha }}'
         run: |
           echo "======= EKS Cluster - Create Dependencies ========"
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
-
-          export DB_USER="${{ secrets.DB_USER }}"
-          export DB_PASS="${{ secrets.DB_PASS }}"
 
           echo "##[section]Getting RDS Endpoint..."
           RDS_ENDPOINT=$(aws rds describe-db-instances \
@@ -193,7 +190,7 @@ jobs:
 
           echo "##[section]Applying Manifests..."
           cd ${{ env.SERVICE_NAME }}
-          sed -i "s|postgres://#{db_user}#:#{db_pass}#@#{rds_endpoint}#/flags_db|postgres://$DB_USER:$DB_PASS@$RDS_ENDPOINT/flags_db|g" k8s/manifests.yml
+          sed -i "s|postgres://#{db_user}#:#{db_pass}#@#{rds_endpoint}#/flags_db|postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@$RDS_ENDPOINT/flags_db|g" k8s/manifests.yml
           cat k8s/manifests.yml
           kubectl apply -f k8s/manifests.yml
 
