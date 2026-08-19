@@ -192,10 +192,11 @@ jobs:
           echo "##[section]Applying Manifests..."
           cd ${{ env.SERVICE_NAME }}
           sed -i "s|postgres://#{db_user}#:#{db_pass}#@#{rds_endpoint}#/auth_db|postgres://$DB_USER:$DB_PASS@$RDS_ENDPOINT/auth_db|g" k8s/manifests.yml
+          cat k8s/manifests.yml
           kubectl apply -f k8s/manifests.yml
 
           sed -i "s|image: DOCKER_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:.*|image: $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG|g" k8s/deployment.yml
-          cat k8s/deployment.yml | grep "image:"
+          cat k8s/deployment.yml
           kubectl apply -f k8s/deployment.yml
 
       # - name: GitOps - Tag Update

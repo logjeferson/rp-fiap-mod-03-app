@@ -14,7 +14,7 @@ metadata:
   namespace: eks-namespace
 type: Opaque
 stringData:
-  DATABASE_URL: "postgres://#{db_user}#:#{db_pass}#@#{rds_endpoint}#/flags_db"
+  DATABASE_URL: "postgres://#{db_user}#:#{db_pass}#@#{rds_endpoint}#/flags_db?sslmode=require"
 
 ---
 apiVersion: v1
