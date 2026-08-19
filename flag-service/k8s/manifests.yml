@@ -1,10 +1,4 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: eks-namespace
-
----
-apiVersion: v1
 kind: ConfigMap
 metadata:
   name: flag-config
