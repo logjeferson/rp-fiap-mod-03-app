@@ -5,6 +5,8 @@ metadata:
   namespace: eks-namespace
 spec:
   replicas: 1
+  strategy:
+      type: Recreate
   selector:
     matchLabels:
       app: auth-service
