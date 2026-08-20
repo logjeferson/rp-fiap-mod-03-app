@@ -189,8 +189,8 @@ jobs:
 
           echo "##[section]Applying Manifests..."
           cd ${{ env.SERVICE_NAME }}
-          sed -i "s|postgres://#{db_user}#:#{db_pass}#@#{rds_endpoint}#|postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@$RDS_ENDPOINT|g" k8s/manifests.yml
-          kubectl apply -f k8s/manifests.yml
+          sed -i "s|postgres://#{db_user}#:#{db_pass}#@#{rds_endpoint}#|postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@$RDS_ENDPOINT|g" k8s/manifests/manifests.yml
+          kubectl apply -f k8s/manifests/manifests.yml
 
       - name: GitOps - Tag Update
         env:
@@ -202,8 +202,8 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          sed -i "s|image: .*/${{ env.ECR_REPOSITORY_NAME }}:.*|image: $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG|g" k8s/deployment.yml
+          sed -i "s|image: .*/${{ env.ECR_REPOSITORY_NAME }}:.*|image: $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG|g" k8s/deployment/deployment.yml
           
-          git add k8s/deployment.yml
+          git add k8s/deployment/deployment.yml
           git commit -m "chore(gitops): atualiza imagem do ${{ env.SERVICE_NAME }} para a tag $IMAGE_TAG [skip ci]"
           git push origin HEAD
