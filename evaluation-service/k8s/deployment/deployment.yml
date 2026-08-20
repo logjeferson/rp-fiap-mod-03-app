@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: evaluation-deployment
-  namespace: eks-namespace
+  namespace: "#{namespace}#"
 spec:
   replicas: 1
   selector:
@@ -46,7 +46,7 @@ spec:
               cpu: "50m"
               memory: "64Mi"
             limits:
-              cpu: "250m"
+              cpu: "200m"
               memory: "256Mi"
           livenessProbe:
             httpGet:

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: flag-config
-  namespace: eks-namespace
+  namespace: "#{namespace}#"
 data:
   AUTH_SERVICE_URL: "http://auth-service.eks-namespace.svc.cluster.local:8001"
 
@@ -11,7 +11,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: flag-secret
-  namespace: eks-namespace
+  namespace: "#{namespace}#"
 type: Opaque
 stringData:
   DATABASE_URL: "postgres://#{db_user}#:#{db_pass}#@#{rds_endpoint}#/flags_db?sslmode=require"
@@ -21,7 +21,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: flag-service
-  namespace: eks-namespace
+  namespace: "#{namespace}#"
 spec:
   type: ClusterIP
   selector:

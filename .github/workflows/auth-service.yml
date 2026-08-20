@@ -11,6 +11,7 @@ on:
 env:
   SERVICE_NAME: 'auth-service'
   ECR_REPOSITORY_NAME: 'ecr-auth-service-01'
+  EKS_NAMESPACE: 'eks-namespace'
   GO_VERSION: '1.25'
 
 jobs:
@@ -189,6 +190,7 @@ jobs:
 
           echo "##[section]Applying Manifests..."
           cd ${{ env.SERVICE_NAME }}
+          sed -i "s|#{namespace}#|${{ env.EKS_NAMESPACE }}|g" k8s/manifests/manifests.yml
           sed -i "s|postgres://#{db_user}#:#{db_pass}#@#{rds_endpoint}#|postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@$RDS_ENDPOINT|g" k8s/manifests/manifests.yml
           kubectl apply -f k8s/manifests/manifests.yml
 
@@ -202,6 +204,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+          sed -i "s|#{namespace}#|${{ env.EKS_NAMESPACE }}|g" k8s/deployment/deployment.yml
           sed -i "s|image: .*/${{ env.ECR_REPOSITORY_NAME }}:.*|image: $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG|g" k8s/deployment/deployment.yml
           
           git add k8s/deployment/deployment.yml
