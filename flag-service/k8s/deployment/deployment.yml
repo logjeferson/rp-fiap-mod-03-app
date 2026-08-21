@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: flag-deployment
-  namespace: "#{namespace}#"
+  namespace: "eks-namespace"
 spec:
   replicas: 1
   selector:
@@ -60,7 +60,7 @@ spec:
               key: DATABASE_URL
       containers:
         - name: flag-container
-          image: DOCKER_REGISTRY/ecr-flag-service-01:latest
+          image: 162521700965.dkr.ecr.us-east-1.amazonaws.com/ecr-flag-service-01:v1.0.03ee37c8795abcb9eb26639a611158f4ced09767
           ports:
             - containerPort: 8002
           resources:
