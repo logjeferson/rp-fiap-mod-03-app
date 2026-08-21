@@ -140,7 +140,6 @@ jobs:
       contents: write
     env:
       EKS_CLUSTER_NAME: 'eks-cluster-01'
-      EKS_NAMESPACE: 'eks-namespace'
       AWS_SQS_NAME: 'EventQueue'
       AWS_EVALUATION_ROLE_NAME: 'evaluation-service-role'
       AWS_ANALYTICS_ROLE_NAME: 'analytics-service-role'
@@ -227,3 +226,23 @@ jobs:
           git add k8s/deployment/deployment.yml
           git commit -m "chore(gitops): atualiza imagem do ${{ env.SERVICE_NAME }} para a tag $IMAGE_TAG [skip ci]"
           git push origin HEAD
+
+  keda-load-test:
+    name: TEST - SERVICE - ANALYTICS
+    runs-on: ubuntu-latest
+    needs: deploy
+    environment: 'APPLY_APPROVAL'
+    steps:
+      - name: KEDA - Load Test
+        run: |
+          BASE_URL="https://apis.mysandbox.com.br/evaluation/evaluate"
+          FLAG_NAME="enable-new-dashboard"
+
+          echo "Iniciando o envio de 75 requisições para a API..."
+          for i in {1..75}; do
+            TARGET_URL="${BASE_URL}?user_id=user-${i}&flag_name=${FLAG_NAME}"
+            echo -n "Chamando API para user-${i} ... Status HTTP: "
+            curl -s -L -o /dev/null -w "%{http_code}\n" "$TARGET_URL"
+            sleep 0.3 
+          done
+          echo "Teste de carga finalizado com sucesso!"

@@ -141,7 +141,6 @@ jobs:
       contents: write
     env:
       EKS_CLUSTER_NAME: 'eks-cluster-01'
-      EKS_NAMESPACE: 'eks-namespace'
       AWS_SQS_NAME: 'EventQueue'
       AWS_REDIS_NAME: 'cache-cluster-01'
       AWS_EVALUATION_ROLE_NAME: 'evaluation-service-role'

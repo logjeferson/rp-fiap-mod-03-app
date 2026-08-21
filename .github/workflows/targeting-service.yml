@@ -140,7 +140,6 @@ jobs:
       contents: write
     env:
       EKS_CLUSTER_NAME: 'eks-cluster-01'
-      EKS_NAMESPACE: 'eks-namespace'
       AWS_RDS_NAME: 'rds-targeting-db-01'
     steps:
       - name: Checkout Code
