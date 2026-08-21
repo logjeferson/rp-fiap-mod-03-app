@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: evaluation-deployment
-  namespace: "#{namespace}#"
+  namespace: "eks-namespace"
 spec:
   replicas: 1
   selector:
@@ -34,7 +34,7 @@ spec:
               mountPath: /shared-data
       containers:
         - name: evaluation-container
-          image: DOCKER_REGISTRY/ecr-evaluation-service-01:latest
+          image: 162521700965.dkr.ecr.us-east-1.amazonaws.com/ecr-evaluation-service-01:v1.0.5da56657a6cbb1ec095d601d0fe866193a91f5ee
           ports:
             - containerPort: 8004
           command: ['sh', '-c']
