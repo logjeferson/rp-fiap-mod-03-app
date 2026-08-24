@@ -28,7 +28,7 @@ jobs:
           scan-type: 'fs'
           scan-ref: '${{ github.workspace }}/${{ env.SERVICE_NAME }}'
           format: 'table'
-          exit-code: '0'
+          exit-code: '1'
           severity: 'CRITICAL'
           scanners: 'vuln'
           trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'
@@ -128,7 +128,7 @@ jobs:
         with:
           image-ref: '${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}'
           format: 'table'
-          exit-code: '0'
+          exit-code: '1'
           severity: 'CRITICAL'
           scanners: 'vuln'
           trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'

@@ -28,7 +28,7 @@ jobs:
           scan-type: 'fs'
           scan-ref: '${{ github.workspace }}/${{ env.SERVICE_NAME }}'
           format: 'table'
-          exit-code: '0'
+          exit-code: '1'
           severity: 'CRITICAL'
           scanners: 'vuln'
           trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'
@@ -83,9 +83,9 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --max-line-length=120 --statistics
 
-      # - name: Python - Run - Unit Tests
-      #   working-directory: ${{ env.SERVICE_NAME }}
-      #   run: pytest
+      - name: Python - Run - Unit Tests
+        working-directory: ${{ env.SERVICE_NAME }}
+        run: pytest
 
   docker-build:
     name: DOCKER BUILD - SERVICE - TARGETING
@@ -127,7 +127,7 @@ jobs:
         with:
           image-ref: '${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_NAME }}:${{ env.IMAGE_TAG }}'
           format: 'table'
-          exit-code: '0'
+          exit-code: '1'
           severity: 'CRITICAL'
           scanners: 'vuln'
           trivyignores: '${{ github.workspace }}/${{ env.SERVICE_NAME }}/.trivyignore'
