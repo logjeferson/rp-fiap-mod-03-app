@@ -53,7 +53,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: analytics-deployment
-  minReplicaCount: 0
+  minReplicaCount: 1
   maxReplicaCount: 10
   pollingInterval: 15
   cooldownPeriod:  60
