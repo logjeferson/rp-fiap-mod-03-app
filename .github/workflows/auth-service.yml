@@ -208,4 +208,10 @@ jobs:
           
           git add k8s/deployment/deployment.yml
           git commit -m "chore(gitops): atualiza imagem do ${{ env.SERVICE_NAME }} para a tag $IMAGE_TAG [skip ci]"
-          git push origin HEAD
+          for i in {1..5}; do
+            git pull --rebase origin main && \
+            git push origin main && \
+            break || \
+            echo "Conflito de push detectado. Outro serviço atualizou o repositório. Tentando novamente em 5 segundos..." && \
+            sleep 5
+          done
