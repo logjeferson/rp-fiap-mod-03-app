@@ -26,4 +26,3 @@ Invoke-RestMethod -Uri "http://localhost:8003/rules/enable-new-dashboard" `
             "value": 50
         }
     }'
-v1
