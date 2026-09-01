@@ -68,10 +68,9 @@ def test_process_message_success(mock_sqs, mock_dynamo):
 
     # VALIDAÇÃO 2: A mensagem foi deletada da fila SQS após o sucesso?
     mock_sqs.delete_message.assert_called_once_with(
-        QueueUrl="https://sqs.us-east-1.amazonaws.com/123/fila-teste",
+        QueueUrl="https://sqs.us-east-1.amazonaws.com/cache-cluster-01/EventQueue", # <-- URL ATUALIZADA AQUI
         ReceiptHandle="receipt-handle-abcde",
     )
-
 
 @patch("app.dynamodb_client")
 @patch("app.sqs_client")
