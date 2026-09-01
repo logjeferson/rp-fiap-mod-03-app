@@ -11,5 +11,3 @@ Invoke-RestMethod -Uri "http://localhost:8001/validate" `
 
 Invoke-RestMethod -Uri "http://localhost:8001/validate" `
     -Headers @{ "Authorization" = "Bearer chave-errada-123" }
-
-v2
