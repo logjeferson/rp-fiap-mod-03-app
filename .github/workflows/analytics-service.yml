@@ -241,18 +241,33 @@ jobs:
     name: TEST - SERVICE - ANALYTICS
     runs-on: ubuntu-latest
     needs: deploy
+    permissions:
+      contents: write
+    env:
+      AWS_SQS_NAME: 'EventQueue'
     environment: 'APPLY_APPROVAL'
     steps:
+      - name: AWS Credentials - Configure
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
       - name: KEDA - Load Test
         run: |
-          BASE_URL="https://apis.mysandbox.com.br/evaluation/evaluate"
-          FLAG_NAME="enable-new-dashboard"
+          echo "##[section]Getting SQS URL..."
+          SQS_URL=$(aws sqs get-queue-url \
+            --queue-name ${{ env.AWS_SQS_NAME }} \
+            --query "QueueUrl" \
+            --output text)
+          echo "##[section]SQS URL found: $SQS_URL"
 
-          echo "Iniciando o envio de 150 requisições para a API..."
+          echo "Injetando 150 mensagens diretamente na SQS para forçar o KEDA a escalar..."
           for i in {1..150}; do
-            TARGET_URL="${BASE_URL}?user_id=user-${i}&flag_name=${FLAG_NAME}"
-            echo -n "Chamando API para user-${i} ... Status HTTP: "
-            curl -s -L -o /dev/null -w "%{http_code}\n" "$TARGET_URL"
-            sleep 0.3 
+            aws sqs send-message \
+              --queue-url "$SQS_URL" \
+              --message-body "{\"user_id\": \"user-${i}\", \"flag_name\": \"enable-new-dashboard\", \"result\": true}" \
+              --region us-east-1 > /dev/null
           done
-          echo "Teste de carga finalizado com sucesso!"
+          echo "Mensagens injetadas! Olhe o cluster em instantes."
