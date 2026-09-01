@@ -60,7 +60,7 @@ spec:
               key: DATABASE_URL
       containers:
         - name: flag-container
-          image: 162521700965.dkr.ecr.us-east-1.amazonaws.com/ecr-flag-service-01:v1.0.03ee37c8795abcb9eb26639a611158f4ced09767
+          image: 162521700965.dkr.ecr.us-east-1.amazonaws.com/ecr-flag-service-01:v1.0.fce417145eb3d73a2f74f48ac2ea55aba128fc1f
           ports:
             - containerPort: 8002
           resources:
