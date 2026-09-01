@@ -72,6 +72,7 @@ def test_process_message_success(mock_sqs, mock_dynamo):
         ReceiptHandle="receipt-handle-abcde",
     )
 
+
 @patch("app.dynamodb_client")
 @patch("app.sqs_client")
 def test_process_message_invalid_json(mock_sqs, mock_dynamo):
