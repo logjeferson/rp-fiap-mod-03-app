@@ -9,6 +9,7 @@ import boto3
 from botocore.exceptions import NoCredentialsError, ClientError
 from flask import Flask, jsonify
 from dotenv import load_dotenv
+from datetime import datetime, timezone
 
 # Configura o logging
 logging.basicConfig(
@@ -60,10 +61,10 @@ def process_message(message):
         # Constrói o item no formato do DynamoDB
         item = {
             "event_id": {"S": event_id},
-            "user_id": {"S": body["user_id"]},
-            "flag_name": {"S": body["flag_name"]},
-            "result": {"BOOL": body["result"]},
-            "timestamp": {"S": body["timestamp"]},
+            "user_id": {"S": body.get("user_id", "unknown-user")},
+            "flag_name": {"S": body.get("flag_name", "unknown-flag")},
+            "result": {"BOOL": body.get("result", False)},
+            "timestamp": {"S": body.get("timestamp", datetime.now(timezone.utc).isoformat())},
         }
 
         # Insere no DynamoDB
