@@ -24,7 +24,6 @@ metadata:
   name: analytics-sa
   namespace: "#{namespace}#"
   annotations:
-    eks.amazonaws.com/role-arn: "#{aws_evaluation_role_arn}#"
     eks.amazonaws.com/role-arn: "#{aws_analytics_role_arn}#"
 
 ---
