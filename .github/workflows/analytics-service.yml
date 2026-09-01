@@ -244,8 +244,8 @@ jobs:
           BASE_URL="https://apis.mysandbox.com.br/evaluation/evaluate"
           FLAG_NAME="enable-new-dashboard"
 
-          echo "Iniciando o envio de 75 requisições para a API..."
-          for i in {1..75}; do
+          echo "Iniciando o envio de 150 requisições para a API..."
+          for i in {1..150}; do
             TARGET_URL="${BASE_URL}?user_id=user-${i}&flag_name=${FLAG_NAME}"
             echo -n "Chamando API para user-${i} ... Status HTTP: "
             curl -s -L -o /dev/null -w "%{http_code}\n" "$TARGET_URL"
