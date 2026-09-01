@@ -215,22 +215,26 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: 'v1.0.${{ github.sha }}'
         run: |
-          cd ${{ env.SERVICE_NAME }}
-
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git reset --hard origin/main
 
+          cd ${{ env.SERVICE_NAME }}
           sed -i "s|#{namespace}#|${{ env.EKS_NAMESPACE }}|g" k8s/deployment/deployment.yml
           sed -i "s|image: .*/${{ env.ECR_REPOSITORY_NAME }}:.*|image: $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG|g" k8s/deployment/deployment.yml
-          
+
           git add k8s/deployment/deployment.yml
-          git commit -m "chore(gitops): atualiza imagem do ${{ env.SERVICE_NAME }} para a tag $IMAGE_TAG [skip ci]"
+          git commit -m "chore(gitops): atualiza imagem do ${{ env.SERVICE_NAME }} para a tag $IMAGE_TAG [skip ci]" || true
+
           for i in {1..5}; do
             git pull --rebase origin main && \
             git push origin main && \
             break || \
-            echo "Conflito de push detectado. Outro serviço atualizou o repositório. Tentando novamente em 5 segundos..." && \
+            echo "Conflito de concorrência. Tentando novamente em 5 segundos..." && \
             sleep 5
+            git rebase --abort || true
+            git pull origin main --strategy-option theirs || true
           done
 
   keda-load-test:
