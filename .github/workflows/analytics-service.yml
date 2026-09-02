@@ -52,7 +52,7 @@ jobs:
           args: >
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.projectName=${{ github.event.repository.name }}/${{ env.SERVICE_NAME }}
-            -Dsonar.projectKey=${{ github.event.repository.name }}_${{ env.SERVICE_NAME }}
+            -Dsonar.projectKey=${{ github.event.repository.name }}/${{ env.SERVICE_NAME }}
             -Dsonar.python.version=${{ env.PYTHON_VERSION }}
             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.spec.ts,**/*.test.ts,**/*.test.js,**/*.spec.js,**/*.d.ts,**/*.json,**/*.yml,**/*.yaml,**/*.md
 
