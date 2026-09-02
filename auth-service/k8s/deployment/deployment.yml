@@ -38,7 +38,7 @@ spec:
               key: DATABASE_URL
       containers:
         - name: auth-container
-          image: 162521700965.dkr.ecr.us-east-1.amazonaws.com/ecr-auth-service-01:v1.0.a38eca3d9d2b483389052f9affca8d02d185b183
+          image: 162521700965.dkr.ecr.us-east-1.amazonaws.com/ecr-auth-service-01:v1.0.9efb43b5b9ec07bfa56c36ce1d359a521db8187b
           ports:
             - containerPort: 8001
           resources:
