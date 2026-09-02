@@ -263,8 +263,8 @@ jobs:
             --output text)
           echo "##[section]SQS URL found: $SQS_URL"
 
-          echo "Injetando 50 mensagens diretamente na SQS para forçar o KEDA a escalar..."
-          for i in {1..50}; do
+          echo "Injetando 100 mensagens diretamente na SQS para forçar o KEDA a escalar..."
+          for i in {1..100}; do
             aws sqs send-message \
               --queue-url "$SQS_URL" \
               --message-body "{\"user_id\": \"user-${i}\", \"flag_name\": \"enable-new-dashboard\", \"result\": true}" \
