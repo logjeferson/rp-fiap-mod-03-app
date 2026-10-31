@@ -65,7 +65,7 @@ spec:
               key: DATABASE_URL
       containers:
         - name: targeting-container
-          image: 162521700965.dkr.ecr.us-east-1.amazonaws.com/ecr-targeting-service-01:v1.0.a9fc04b5309d7ef20ab0e6de1ff46dc6ffb7c473
+          image: 162521700965.dkr.ecr.us-east-1.amazonaws.com/ecr-targeting-service-01:v1.0.ee11ade8a4d732fe4bca1d6c333dc94d3c21ca2d
           ports:
             - containerPort: 8003
           resources:
