@@ -12,6 +12,8 @@ spec:
     metadata:
       labels:
         app: auth-service
+      annotations:
+        instrumentation.opentelemetry.io/inject-go: "true"
     spec:
       initContainers:
       - name: auth-db-migration

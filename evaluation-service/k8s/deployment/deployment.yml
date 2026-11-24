@@ -12,6 +12,8 @@ spec:
     metadata:
       labels:
         app: evaluation-service
+      annotations:
+        instrumentation.opentelemetry.io/inject-go: "true"
     spec:
       serviceAccountName: evaluation-sa
       initContainers:
